@@ -1,0 +1,167 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Windows.Forms;
+
+namespace WarGameGUI
+{
+    public partial class MainForm : Form
+    {
+        private Queue<Card> player1Deck;
+        private Queue<Card> player2Deck;
+
+        public MainForm()
+        {
+            InitializeComponent();
+        }
+
+        private void MainForm_Load(object sender, EventArgs e)
+        {
+            // Initialize the deck
+            List<Card> deck = InitializeDeck();
+
+            // Shuffle the deck
+            ShuffleDeck(deck);
+
+            // Split the deck between two players
+            player1Deck = new Queue<Card>(deck.GetRange(0, 26));
+            player2Deck = new Queue<Card>(deck.GetRange(26, 26));
+        }
+
+        private List<Card> InitializeDeck()
+        {
+            List<Card> deck = new List<Card>();
+            foreach (Suit suit in Enum.GetValues(typeof(Suit)))
+            {
+                foreach (Rank rank in Enum.GetValues(typeof(Rank)))
+                {
+                    deck.Add(new Card(rank, suit));
+                }
+            }
+            return deck.OrderBy(x => Guid.NewGuid()).ToList(); // Shuffle using Guid.NewGuid()
+        }
+
+        private void ShuffleDeck(List<Card> deck)
+        {
+            deck.OrderBy(x => Guid.NewGuid()).ToList(); // Shuffle using Guid.NewGuid()
+        }
+
+        private void DrawButton_Click(object sender, EventArgs e)
+        {
+            // Draw cards from each player's deck
+            Card player1Card = player1Deck.Dequeue();
+            Card player2Card = player2Deck.Dequeue();
+
+            // Display the cards drawn
+            Player1Label.Text = $"Player 1 draws: {player1Card}";
+            Player2Label.Text = $"Player 2 draws: {player2Card}";
+
+            // Compare the ranks of the cards
+            int comparison = player1Card.CompareTo(player2Card);
+
+            // Determine the winner of the round
+            if (comparison > 0)
+            {
+                ResultLabel.Text = "Player 1 wins the round!";
+                player1Deck.Enqueue(player1Card);
+                player1Deck.Enqueue(player2Card);
+            }
+            else if (comparison < 0)
+            {
+                ResultLabel.Text = "Player 2 wins the round!";
+                player2Deck.Enqueue(player1Card);
+                player2Deck.Enqueue(player2Card);
+            }
+            else
+            {
+                ResultLabel.Text = "It's a tie! War begins!";
+                War();
+            }
+
+            Player1DeckSizeLabel.Text = $"Player 1 deck size: {player1Deck.Count}";
+            Player2DeckSizeLabel.Text = $"Player 2 deck size: {player2Deck.Count}";
+        }
+
+        private void War()
+        {
+            // Check if players have enough cards for war
+            if (player1Deck.Count < 2 || player2Deck.Count < 2)
+                return;
+
+            List<Card> warCards = new List<Card>();
+            for (int i = 0; i < 2; i++)
+            {
+                warCards.Add(player1Deck.Dequeue());
+                warCards.Add(player2Deck.Dequeue());
+            }
+
+            // Display the cards drawn for the war
+            Player1Label.Text += $"\nPlayer 1 draws for war: {warCards[2]}";
+            Player2Label.Text += $"\nPlayer 2 draws for war: {warCards[3]}";
+
+            // Compare the ranks of the war cards
+            int comparison = warCards[2].CompareTo(warCards[3]);
+
+            // Determine the winner of the war
+            if (comparison > 0)
+            {
+                ResultLabel.Text += "\nPlayer 1 wins the war!";
+                foreach (var card in warCards)
+                    player1Deck.Enqueue(card);
+            }
+            else if (comparison < 0)
+            {
+                ResultLabel.Text += "\nPlayer 2 wins the war!";
+                foreach (var card in warCards)
+                    player2Deck.Enqueue(card);
+            }
+            else
+            {
+                ResultLabel.Text += "\nIt's a tie again! Another war begins!";
+                War();
+            }
+        }
+    }
+
+    enum Suit
+    {
+        Hearts,
+        Diamonds,
+        Clubs,
+        Spades
+    }
+
+    enum Rank
+    {
+        Two = 2, Three, Four, Five, Six, Seven, Eight, Nine, Ten,
+        Jack, Queen, King, Ace
+    }
+
+    class Card : IComparable<Card>
+    {
+        public Rank Rank { get; }
+        public Suit Suit { get; }
+
+        public Card(Rank rank, Suit suit)
+        {
+            Rank = rank;
+            Suit = suit;
+        }
+
+        public int CompareTo(Card other)
+        {
+            if (ReferenceEquals(this, other)) return 0;
+            if (ReferenceEquals(null, other)) return 1;
+
+            int rankComparison = Rank.CompareTo(other.Rank);
+            if (rankComparison != 0) return rankComparison;
+
+            return Suit.CompareTo(other.Suit);
+        }
+
+        public override string ToString()
+        {
+            return $"{Rank} of {Suit}";
+        }
+    }
+}
